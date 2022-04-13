@@ -100,17 +100,19 @@ func (c *ContractorRepository) unwrapContractorSlice(res interface{}) model.Cont
 
 func (c *ContractorRepository) CreateContractor(ctx context.Context, tx pgx.Tx, contractor *model.Contractor) error {
 	query := `INSERT INTO contractors_contractor (
-					 resident, bin, name, email, status
+					 resident, bin, name, email, status,agent_name,agent_position
 				) VALUES (
-					:resident, :bin, :name, :email, :status
+					:resident, :bin, :name, :email, :status,:agent_name,:agent_position
 				) RETURNING id`
 
 	finalQuery, queryArgs, err := InlineNamedPlaceholders(query, map[string]interface{}{
-		"resident": contractor.Resident,
-		"bin":      contractor.Bin,
-		"name":     contractor.Name,
-		"email":    contractor.Email,
-		"status":   model.ContractorStatusActive,
+		"resident":       contractor.Resident,
+		"bin":            contractor.Bin,
+		"name":           contractor.Name,
+		"email":          contractor.Email,
+		"status":         model.ContractorStatusActive,
+		"agent_name":     contractor.AgentName,
+		"agent_position": contractor.AgentPosition,
 	})
 	if err != nil {
 		return err
@@ -248,5 +250,28 @@ func (c *ContractorRepository) DeleteContractorEmployee(id int64) error {
 		return err
 	}
 
+	return nil
+}
+
+func (c *ContractorRepository) CreateCredentials(ctx context.Context, tx pgx.Tx, credentials model.Credentials) error {
+	query := `INSERT INTO contractors_credentials (
+					 contractor_id, employee_id, password
+				) VALUES (
+					:contractor_id, :employee_id, :password
+				) RETURNING id`
+
+	finalQuery, queryArgs, err := InlineNamedPlaceholders(query, map[string]interface{}{
+		"contractor_id": credentials.ContractorId,
+		"employee_id":   credentials.EmployeeId,
+		"password":      credentials.Password,
+	})
+	if err != nil {
+		return err
+	}
+
+	err = tx.QueryRow(ctx, finalQuery, queryArgs...).Scan(&credentials.Id)
+	if err != nil {
+		return err
+	}
 	return nil
 }

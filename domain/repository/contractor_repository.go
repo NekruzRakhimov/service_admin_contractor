@@ -18,4 +18,6 @@ type ContractorRepository interface {
 	CreateContractorEmployee(ctx context.Context, tx pgx.Tx, contractorId int64, employee *model.Employee) error
 	UpdateContractorEmployeeData(ctx context.Context, tx pgx.Tx, employeeId int64, employee *model.Employee) error
 	DeleteContractorEmployee(id int64) error
+
+	CreateCredentials(ctx context.Context, tx pgx.Tx, credentials model.Credentials) error
 }
