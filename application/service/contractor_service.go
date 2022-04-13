@@ -2,6 +2,10 @@ package service
 
 import (
 	"context"
+	"errors"
+	"fmt"
+	"github.com/jackc/pgx/v4"
+	"github.com/sethvargo/go-password/password"
 	"service_admin_contractor/application/cerrors"
 	"service_admin_contractor/domain/model"
 	"service_admin_contractor/domain/repository"
@@ -48,14 +52,30 @@ func (cs *contractorService) GetContractor(ctx context.Context, id int64) (model
 }
 
 func (cs *contractorService) CreateContractor(ctx context.Context, contractor *model.Contractor) error {
+	existingContractors, _, err := cs.FindContractors(ctx, model.ContractorSearchParameters{
+		Pagination: *model.NewMaxPagination(),
+		Email:      &contractor.Email})
+	if err != nil {
+		return err
+	}
+
+	if len(existingContractors) > 0 {
+		return errors.New(fmt.Sprintf("В базе уже есть email %s", contractor.Email))
+	}
+
 	tx, err := cs.cr.WithTransaction(ctx)
 	if err != nil {
 		return err
 	}
 
 	// Create Contractor
-	err = cs.cr.CreateContractor(ctx, tx, contractor)
-	if err != nil {
+	if err = cs.cr.CreateContractor(ctx, tx, contractor); err != nil {
+		cs.cr.RollbackQuietly(tx, ctx)
+		return err
+	}
+
+	// Create Credentials
+	if err = cs.createCredentials(ctx, tx, contractor); err != nil {
 		cs.cr.RollbackQuietly(tx, ctx)
 		return err
 	}
@@ -67,6 +87,36 @@ func (cs *contractorService) CreateContractor(ctx context.Context, contractor *m
 	}
 
 	return nil
+}
+
+func (cs *contractorService) createCredentials(ctx context.Context, tx pgx.Tx, contractor *model.Contractor) error {
+	var err error
+
+	generator, err := password.NewGenerator(&password.GeneratorInput{
+		Symbols: model.Symbols,
+	})
+	if err != nil {
+		return err
+	}
+
+	if contractor.AgentPassword, err = generator.Generate(12, 4, 6, false, false); err != nil {
+		return err
+	}
+
+	credentials := model.Credentials{
+		ContractorId: &contractor.Id,
+		Password:     contractor.AgentPassword,
+	}
+
+	if credentials.Password, err = credentials.GenerateHashPassword(); err != nil {
+		return err
+	}
+
+	if err = cs.cr.CreateCredentials(ctx, tx, credentials); err != nil {
+		return err
+	}
+
+	return err
 }
 
 func (cs *contractorService) UpdateContractor(ctx context.Context, id int64, contractor *model.Contractor) error {

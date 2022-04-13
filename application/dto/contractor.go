@@ -8,14 +8,17 @@ import (
 )
 
 type ContractorDto struct {
-	Id        int64         `json:"id"`
-	Resident  bool          `json:"resident"`
-	Bin       *string       `json:"bin"`
-	Name      *string       `json:"name"`
-	Email     string        `json:"email" validate:"required"`
-	BlockDate *time.Time    `json:"blockDate"`
-	Status    string        `json:"status"`
-	Employees []EmployeeDto `json:"employees"`
+	Id            int64         `json:"id"`
+	Resident      bool          `json:"resident"`
+	Bin           *string       `json:"bin"`
+	Name          *string       `json:"name" validate:"required"`
+	Email         string        `json:"email" validate:"required"`
+	AgentName     string        `json:"agentName" validate:"required"`
+	AgentPassword string        `json:"agentPassword"`
+	AgentPosition string        `json:"agentPosition" validate:"required"`
+	BlockDate     *time.Time    `json:"blockDate"`
+	Status        string        `json:"status"`
+	Employees     []EmployeeDto `json:"employees"`
 }
 
 func (dto ContractorDto) StructLevelValidation(sl validator.StructLevel) {
@@ -51,14 +54,17 @@ func ConvertContractor(c model.Contractor) ContractorDto {
 	}
 
 	return ContractorDto{
-		Id:        c.Id,
-		Resident:  c.Resident,
-		Bin:       c.Bin,
-		Name:      c.Name,
-		Email:     c.Email,
-		BlockDate: c.BlockDate,
-		Status:    string(c.Status),
-		Employees: employees,
+		Id:            c.Id,
+		Resident:      c.Resident,
+		Bin:           c.Bin,
+		Name:          c.Name,
+		Email:         c.Email,
+		BlockDate:     c.BlockDate,
+		Status:        string(c.Status),
+		Employees:     employees,
+		AgentName:     c.AgentName,
+		AgentPassword: c.AgentPassword,
+		AgentPosition: c.AgentPosition,
 	}
 }
 
@@ -109,11 +115,13 @@ func parseContractorStatusFilter(values url.Values) *model.ContractorStatus {
 
 func ConvertContractorDtoToEntity(dto *ContractorDto) *model.Contractor {
 	return &model.Contractor{
-		Resident: dto.Resident,
-		Bin:      dto.Bin,
-		Name:     dto.Name,
-		Email:    dto.Email,
-		Status:   model.ContractorStatus(dto.Status),
+		Resident:      dto.Resident,
+		Bin:           dto.Bin,
+		Name:          dto.Name,
+		Email:         dto.Email,
+		Status:        model.ContractorStatus(dto.Status),
+		AgentName:     dto.AgentName,
+		AgentPosition: dto.AgentPosition,
 	}
 }
 

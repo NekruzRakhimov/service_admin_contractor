@@ -2,19 +2,27 @@ package model
 
 import (
 	"fmt"
+	"golang.org/x/crypto/bcrypt"
 	"strconv"
 	"time"
 )
 
+const (
+	Symbols = "!#$%&+-=?"
+)
+
 type Contractor struct {
-	Id        int64
-	Resident  bool
-	Bin       *string
-	Name      *string
-	Email     string
-	BlockDate *time.Time
-	Status    ContractorStatus
-	Employees []Employee
+	Id            int64
+	Resident      bool
+	Bin           *string
+	Name          *string
+	Email         string
+	AgentName     string
+	AgentPassword string
+	AgentPosition string
+	BlockDate     *time.Time
+	Status        ContractorStatus
+	Employees     []Employee
 }
 
 func (c Contractor) ReadModel(reader DbModelReader) (interface{}, error) {
@@ -96,4 +104,22 @@ type ContractorSearchParameters struct {
 	Name   *string
 	Email  *string
 	Status *ContractorStatus
+}
+
+type Credentials struct {
+	Id           int64
+	ContractorId *int64
+	EmployeeId   *int64
+	Password     string
+}
+
+func (c Credentials) GenerateHashPassword() (string, error) {
+	saltedBytes := []byte(c.Password)
+	hashedBytes, err := bcrypt.GenerateFromPassword(saltedBytes, bcrypt.DefaultCost)
+	if err != nil {
+		return "", err
+	}
+
+	hash := string(hashedBytes[:])
+	return hash, nil
 }
