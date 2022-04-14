@@ -20,4 +20,5 @@ type ContractorRepository interface {
 	DeleteContractorEmployee(id int64) error
 
 	CreateCredentials(ctx context.Context, tx pgx.Tx, credentials model.Credentials) error
+	UpdateContractorCredentials(ctx context.Context, tx pgx.Tx, credentials model.Credentials) error
 }
