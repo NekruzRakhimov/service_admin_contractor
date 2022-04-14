@@ -122,6 +122,7 @@ func ConvertContractorDtoToEntity(dto *ContractorDto) *model.Contractor {
 		Status:        model.ContractorStatus(dto.Status),
 		AgentName:     dto.AgentName,
 		AgentPosition: dto.AgentPosition,
+		AgentPassword: dto.AgentPassword,
 	}
 }
 

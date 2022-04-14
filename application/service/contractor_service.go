@@ -22,6 +22,8 @@ type ContractorService interface {
 	CreateContractorEmployee(ctx context.Context, contractorId int64, employee *model.Employee) error
 	UpdateContractorEmployee(ctx context.Context, id int64, employee *model.Employee) error
 	DeleteContractorEmployee(id int64) error
+
+	GeneratePassword() (string, error)
 }
 
 type contractorService struct {
@@ -52,6 +54,10 @@ func (cs *contractorService) GetContractor(ctx context.Context, id int64) (model
 }
 
 func (cs *contractorService) CreateContractor(ctx context.Context, contractor *model.Contractor) error {
+	if len(contractor.AgentPassword) < 12 {
+		return errors.New(fmt.Sprintf("не указан пароль или не соответсвует длина пароля"))
+	}
+
 	existingContractors, _, err := cs.FindContractors(ctx, model.ContractorSearchParameters{
 		Pagination: *model.NewMaxPagination(),
 		Email:      &contractor.Email})
@@ -91,18 +97,6 @@ func (cs *contractorService) CreateContractor(ctx context.Context, contractor *m
 
 func (cs *contractorService) createCredentials(ctx context.Context, tx pgx.Tx, contractor *model.Contractor) error {
 	var err error
-
-	generator, err := password.NewGenerator(&password.GeneratorInput{
-		Symbols: model.Symbols,
-	})
-	if err != nil {
-		return err
-	}
-
-	if contractor.AgentPassword, err = generator.Generate(12, 4, 6, false, false); err != nil {
-		return err
-	}
-
 	credentials := model.Credentials{
 		ContractorId: &contractor.Id,
 		Password:     contractor.AgentPassword,
@@ -120,6 +114,19 @@ func (cs *contractorService) createCredentials(ctx context.Context, tx pgx.Tx, c
 }
 
 func (cs *contractorService) UpdateContractor(ctx context.Context, id int64, contractor *model.Contractor) error {
+	existingContractors, _, err := cs.FindContractors(ctx, model.ContractorSearchParameters{
+		Pagination: *model.NewMaxPagination(),
+		Email:      &contractor.Email})
+	if err != nil {
+		return err
+	}
+
+	for _, c := range existingContractors {
+		if c.Id != id {
+			return errors.New(fmt.Sprintf("В базе уже есть email %s", contractor.Email))
+		}
+	}
+
 	tx, err := cs.cr.WithTransaction(ctx)
 	if err != nil {
 		cs.cr.RollbackQuietly(tx, ctx)
@@ -133,8 +140,12 @@ func (cs *contractorService) UpdateContractor(ctx context.Context, id int64, con
 		contractor.BlockDate = nil
 	}
 
-	err = cs.cr.UpdateContractorData(ctx, tx, id, contractor)
-	if err != nil {
+	if err = cs.cr.UpdateContractorData(ctx, tx, id, contractor); err != nil {
+		cs.cr.RollbackQuietly(tx, ctx)
+		return err
+	}
+
+	if err = cs.updateContractorCredentials(ctx, tx, id, contractor); err != nil {
 		cs.cr.RollbackQuietly(tx, ctx)
 		return err
 	}
@@ -146,6 +157,27 @@ func (cs *contractorService) UpdateContractor(ctx context.Context, id int64, con
 	}
 
 	return nil
+}
+
+func (cs *contractorService) updateContractorCredentials(ctx context.Context, tx pgx.Tx, id int64,
+	contractor *model.Contractor) error {
+	var err error
+	if len(contractor.AgentPassword) >= 12 {
+		credentials := model.Credentials{
+			ContractorId: &id,
+			Password:     contractor.AgentPassword,
+		}
+
+		if credentials.Password, err = credentials.GenerateHashPassword(); err != nil {
+			return err
+		}
+
+		if err = cs.cr.UpdateContractorCredentials(ctx, tx, credentials); err != nil {
+			return err
+		}
+	}
+
+	return err
 }
 
 func (cs *contractorService) DeleteContractor(id int64) error {
@@ -204,4 +236,20 @@ func (cs *contractorService) UpdateContractorEmployee(ctx context.Context, id in
 
 func (cs *contractorService) DeleteContractorEmployee(id int64) error {
 	return cs.cr.DeleteContractorEmployee(id)
+}
+
+func (cs *contractorService) GeneratePassword() (string, error) {
+	generator, err := password.NewGenerator(&password.GeneratorInput{
+		Symbols: model.Symbols,
+	})
+	if err != nil {
+		return "", err
+	}
+
+	generatedPassword, err := generator.Generate(12, 4, 6, false, false)
+	if err != nil {
+		return "", err
+	}
+
+	return generatedPassword, nil
 }

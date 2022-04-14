@@ -135,17 +135,21 @@ func (c *ContractorRepository) UpdateContractorData(ctx context.Context, tx pgx.
 					name = 			:name, 
 					email = 		:email, 
 					block_date =	:block_date,
-					status = 		:status
+					status = 		:status,
+					agent_name = 	:agent_name,
+					agent_position = :agent_position
 				WHERE ID = :id_value`
 
 	finalQuery, queryArgs, err := InlineNamedPlaceholders(query, map[string]interface{}{
-		"resident":   contractor.Resident,
-		"bin":        contractor.Bin,
-		"name":       contractor.Name,
-		"email":      contractor.Email,
-		"block_date": contractor.BlockDate,
-		"status":     contractor.Status,
-		"id_value":   contractorId,
+		"resident":       contractor.Resident,
+		"bin":            contractor.Bin,
+		"name":           contractor.Name,
+		"email":          contractor.Email,
+		"block_date":     contractor.BlockDate,
+		"status":         contractor.Status,
+		"agent_name":     contractor.AgentName,
+		"agent_position": contractor.AgentPosition,
+		"id_value":       contractorId,
 	})
 	if err != nil {
 		return err
@@ -273,5 +277,25 @@ func (c *ContractorRepository) CreateCredentials(ctx context.Context, tx pgx.Tx,
 	if err != nil {
 		return err
 	}
+	return nil
+}
+
+func (c *ContractorRepository) UpdateContractorCredentials(ctx context.Context, tx pgx.Tx, credentials model.Credentials) error {
+	query := `update contractors_credentials 
+				set password = :password where contractor_id = :contractor_id`
+
+	finalQuery, queryArgs, err := InlineNamedPlaceholders(query, map[string]interface{}{
+		"password":      credentials.Password,
+		"contractor_id": credentials.ContractorId,
+	})
+	if err != nil {
+		return err
+	}
+
+	_, err = tx.Exec(ctx, finalQuery, queryArgs...)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }

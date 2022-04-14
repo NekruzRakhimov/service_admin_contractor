@@ -31,6 +31,8 @@ func (c *ContractorController) HandleRoutes(r *mux.Router) {
 	r.HandleFunc("/contractors/{id}/employee/{employeeId}", c.UpdateContractorEmployee).Methods(http.MethodOptions, http.MethodPut)
 	r.HandleFunc("/contractors/{id}/employee/{employeeId}", c.DeleteContractorEmployee).Methods(http.MethodOptions, http.MethodDelete)
 
+	r.HandleFunc("/contractors/generate/password", c.GeneratePassword).Methods(http.MethodOptions, http.MethodGet)
+
 }
 
 func (c *ContractorController) GetAllContractors(w http.ResponseWriter, r *http.Request) {
@@ -272,4 +274,14 @@ func (c *ContractorController) DeleteContractorEmployee(w http.ResponseWriter, r
 	}
 
 	respond.With(w, r, true)
+}
+
+func (c *ContractorController) GeneratePassword(w http.ResponseWriter, r *http.Request) {
+	password, err := c.s.GeneratePassword()
+	if err != nil {
+		respond.WithError(w, r, err)
+		return
+	}
+
+	respond.With(w, r, password)
 }
