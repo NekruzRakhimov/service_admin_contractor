@@ -13,9 +13,9 @@ type ContractorDto struct {
 	Bin           *string       `json:"bin"`
 	Name          *string       `json:"name" validate:"required"`
 	Email         string        `json:"email" validate:"required"`
-	AgentName     string        `json:"agentName" validate:"required"`
+	AgentName     *string        `json:"agentName" validate:"required"`
 	AgentPassword string        `json:"agentPassword"`
-	AgentPosition string        `json:"agentPosition" validate:"required"`
+	AgentPosition *string        `json:"agentPosition" validate:"required"`
 	BlockDate     *time.Time    `json:"blockDate"`
 	Status        string        `json:"status"`
 	Employees     []EmployeeDto `json:"employees"`

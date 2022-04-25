@@ -66,6 +66,7 @@ const (
 	CouldNotPingDb           = 51001
 
 	CouldNotGetContractorById = 52000
+	CouldNotCreateContractor  = 52001
 )
 
 // endregion
@@ -154,9 +155,19 @@ func ErrCouldNotPingDb(err error) *AppError {
 
 func ErrCouldNotGetContractorById(err error, id int64) *AppError {
 	return &AppError{
-		error:       err,
-		code:        CouldNotGetContractorById,
-		userMessage: fmt.Sprintf("ошибка во время запроса контрагента по ИД %d", id),
+		httpStatusCode: http.StatusInternalServerError,
+		error:          err,
+		code:           CouldNotGetContractorById,
+		userMessage:    fmt.Sprintf("ошибка во время запроса контрагента по ИД %d", id),
+	}
+}
+
+func ErrCouldNotCreateContractor(err error, text string) *AppError {
+	return &AppError{
+		httpStatusCode: http.StatusInternalServerError,
+		error:          err,
+		code:           CouldNotCreateContractor,
+		userMessage:    fmt.Sprintf("ошибка во время создания контрагента: %s", text),
 	}
 }
 
