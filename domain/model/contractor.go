@@ -17,9 +17,9 @@ type Contractor struct {
 	Bin           *string
 	Name          *string
 	Email         string
-	AgentName     string
+	AgentName     *string
 	AgentPassword string
-	AgentPosition string
+	AgentPosition *string
 	BlockDate     *time.Time
 	Status        ContractorStatus
 	Employees     []Employee
@@ -28,7 +28,8 @@ type Contractor struct {
 func (c Contractor) ReadModel(reader DbModelReader) (interface{}, error) {
 	tmp := Contractor{}
 	var employees []interface{}
-	err := reader.Scan(&tmp.Id, &tmp.Resident, &tmp.Bin, &tmp.Name, &tmp.Email, &tmp.BlockDate, &tmp.Status, &employees)
+	err := reader.Scan(&tmp.Id, &tmp.Resident, &tmp.Bin, &tmp.Name, &tmp.Email, &tmp.BlockDate, &tmp.Status, &employees,
+		&tmp.AgentName, &tmp.AgentPosition)
 	if err != nil {
 		return nil, err
 	}

@@ -62,11 +62,12 @@ func (cs *contractorService) CreateContractor(ctx context.Context, contractor *m
 		Pagination: *model.NewMaxPagination(),
 		Email:      &contractor.Email})
 	if err != nil {
-		return err
+		return cerrors.ErrCouldNotCreateContractor(err, " - поиск по базе возвратил ошибку")
 	}
 
 	if len(existingContractors) > 0 {
-		return errors.New(fmt.Sprintf("В базе уже есть email %s", contractor.Email))
+		errText := fmt.Sprintf("В базе уже есть email %s", contractor.Email)
+		return cerrors.ErrCouldNotCreateContractor(errors.New(errText), errText)
 	}
 
 	tx, err := cs.cr.WithTransaction(ctx)
@@ -77,19 +78,19 @@ func (cs *contractorService) CreateContractor(ctx context.Context, contractor *m
 	// Create Contractor
 	if err = cs.cr.CreateContractor(ctx, tx, contractor); err != nil {
 		cs.cr.RollbackQuietly(tx, ctx)
-		return err
+		return cerrors.ErrCouldNotCreateContractor(err, " - основные данные не записались в базу")
 	}
 
 	// Create Credentials
 	if err = cs.createCredentials(ctx, tx, contractor); err != nil {
 		cs.cr.RollbackQuietly(tx, ctx)
-		return err
+		return cerrors.ErrCouldNotCreateContractor(err, " - учетные данные не записались в базу")
 	}
 
 	err = tx.Commit(ctx)
 	if err != nil {
 		cs.cr.RollbackQuietly(tx, ctx)
-		return err
+		return cerrors.ErrCouldNotCreateContractor(err, " - не зафексирована в базе")
 	}
 
 	return nil

@@ -40,7 +40,7 @@ func (c *ContractorRepository) FindContractors(ctx context.Context,
 								SELECT
 									JSON_AGG(e.*)
 								FROM contractors_contractor_employee e WHERE e.contractor_id = c.id and e.is_delete = false
-							) as employees`
+							) as employees,c.agent_name,c.agent_position`
 	queryFrom := ` from contractors_contractor c`
 	filters := ` where 1=1 and c.is_delete = false`
 
@@ -78,7 +78,7 @@ func (c *ContractorRepository) GetContractor(ctx context.Context, id int64) (mod
 						SELECT
 							JSON_AGG(e.*)
 						FROM contractors_contractor_employee e WHERE e.contractor_id = c.id and e.is_delete = false
-					) as employees
+					) as employees,c.agent_name,c.agent_position
 				FROM contractors_contractor c
 						 where c.id = :id and c.is_delete = false`
 	res, err := QueryWithMap(c.db, ctx, query, args).Read(model.Contractor{})
