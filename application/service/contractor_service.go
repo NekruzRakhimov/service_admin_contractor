@@ -139,6 +139,7 @@ func (cs *contractorService) UpdateContractor(ctx context.Context, id int64, con
 		contractor.BlockDate = &blockDate
 	} else {
 		contractor.BlockDate = nil
+		contractor.Status = model.ContractorStatusActive
 	}
 
 	if err = cs.cr.UpdateContractorData(ctx, tx, id, contractor); err != nil {
