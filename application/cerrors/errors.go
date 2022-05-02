@@ -67,6 +67,7 @@ const (
 
 	CouldNotGetContractorById = 52000
 	CouldNotCreateContractor  = 52001
+	CouldNotUpdateContractor  = 52002
 )
 
 // endregion
@@ -168,6 +169,15 @@ func ErrCouldNotCreateContractor(err error, text string) *AppError {
 		error:          err,
 		code:           CouldNotCreateContractor,
 		userMessage:    fmt.Sprintf("ошибка во время создания контрагента: %s", text),
+	}
+}
+
+func ErrCouldNotUpdateContractor(err error, text string) *AppError {
+	return &AppError{
+		httpStatusCode: http.StatusInternalServerError,
+		error:          err,
+		code:           CouldNotUpdateContractor,
+		userMessage:    fmt.Sprintf("ошибка во время редактировния контрагента: %s", text),
 	}
 }
 

@@ -119,19 +119,20 @@ func (cs *contractorService) UpdateContractor(ctx context.Context, id int64, con
 		Pagination: *model.NewMaxPagination(),
 		Email:      &contractor.Email})
 	if err != nil {
-		return err
+		return cerrors.ErrCouldNotUpdateContractor(err, " - поиск по базе возвратил ошибку")
 	}
 
 	for _, c := range existingContractors {
 		if c.Id != id {
-			return errors.New(fmt.Sprintf("В базе уже есть email %s", contractor.Email))
+			errText := fmt.Sprintf("В базе уже есть email %s", contractor.Email)
+			return cerrors.ErrCouldNotUpdateContractor(errors.New(errText), errText)
 		}
 	}
 
 	tx, err := cs.cr.WithTransaction(ctx)
 	if err != nil {
 		cs.cr.RollbackQuietly(tx, ctx)
-		return err
+		return cerrors.ErrCouldNotUpdateContractor(err, " - нет открылся транзакция")
 	}
 
 	if contractor.Status == model.ContractorStatusBlock {
@@ -144,18 +145,18 @@ func (cs *contractorService) UpdateContractor(ctx context.Context, id int64, con
 
 	if err = cs.cr.UpdateContractorData(ctx, tx, id, contractor); err != nil {
 		cs.cr.RollbackQuietly(tx, ctx)
-		return err
+		return cerrors.ErrCouldNotUpdateContractor(err, " - основные данные не обновились")
 	}
 
 	if err = cs.updateContractorCredentials(ctx, tx, id, contractor); err != nil {
 		cs.cr.RollbackQuietly(tx, ctx)
-		return err
+		return cerrors.ErrCouldNotUpdateContractor(err, " - данные по паролю не обновились")
 	}
 
 	err = tx.Commit(ctx)
 	if err != nil {
 		cs.cr.RollbackQuietly(tx, ctx)
-		return err
+		return cerrors.ErrCouldNotUpdateContractor(err, " - данные не обновились")
 	}
 
 	return nil
